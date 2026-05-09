@@ -1,0 +1,57 @@
+<div class="sidebar">
+
+  <!-- Brand -->
+  <a class="sidebar-brand" routerLink="/dashboard">
+    <div class="brand-icon">
+      <i class="bi bi-bag-check-fill"></i>
+    </div>
+    <div class="brand-text">
+      <div class="brand-name">ShopAdmin</div>
+      <div class="brand-sub">Admin Panel</div>
+    </div>
+  </a>
+
+  <hr class="sidebar-divider">
+
+  <!-- Navigation -->
+  <div class="nav-section-label">Main Menu</div>
+
+  <nav class="sidebar-nav">
+
+    <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+      <div class="nav-icon"><i class="bi bi-speedometer2"></i></div>
+      <span>Dashboard</span>
+    </a>
+
+    <a routerLink="/products" routerLinkActive="active" class="nav-item">
+      <div class="nav-icon"><i class="bi bi-box-seam"></i></div>
+      <span>Products</span>
+    </a>
+
+    <a routerLink="/orders" routerLinkActive="active" class="nav-item">
+      <div class="nav-icon"><i class="bi bi-receipt"></i></div>
+      <span>Orders</span>
+    </a>
+
+    <a routerLink="/inventory" routerLinkActive="active" class="nav-item">
+      <div class="nav-icon"><i class="bi bi-archive"></i></div>
+      <span>Inventory</span>
+    </a>
+
+  </nav>
+
+  <!-- User Footer -->
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">A</div>
+      <div class="user-info">
+        <div class="user-name">Administrator</div>
+        <div class="user-role">Admin</div>
+      </div>
+      <button class="logout-btn" (click)="auth.logout()" title="Logout">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+</div>

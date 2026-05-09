@@ -1,0 +1,222 @@
+<div class="orders-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Orders</h1>
+      <p class="page-subtitle">{{ filteredOrders.length }} order(s) found</p>
+    </div>
+    <div class="pending-pill" *ngIf="countByStatus('PENDING') > 0">
+      <i class="bi bi-clock-fill me-1"></i>
+      {{ countByStatus('PENDING') }} pending
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert-success d-flex align-items-center gap-2" *ngIf="successMessage">
+    <i class="bi bi-check-circle-fill"></i><span>{{ successMessage }}</span>
+  </div>
+  <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="errorMessage && !showModal">
+    <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
+  </div>
+
+  <!-- Status Summary Pills -->
+  <div class="status-summary mb-4">
+    <div class="summary-pill" *ngFor="let s of statuses"
+         [class.active]="filterStatus === s"
+         (click)="filterStatus = filterStatus === s ? '' : s; filter()">
+      <span class="dot" [style.background]="getStatusColor(s)"></span>
+      {{ s | titlecase }}
+      <span class="count">{{ countByStatus(s) }}</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body p-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input type="text" class="form-control"
+                   placeholder="Search by Customer ID..."
+                   [(ngModel)]="searchCustomerId"
+                   (input)="filter()">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" [(ngModel)]="filterStatus" (change)="filter()">
+            <option value="">All Statuses</option>
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-secondary w-100"
+                  (click)="searchCustomerId=''; filterStatus=''; filter()">
+            <i class="bi bi-x-lg me-1"></i>Clear
+          </button>
+        </div>
+        <div class="col-md-3 text-end">
+          <span class="text-muted small">{{ filteredOrders.length }} of {{ orders.length }} orders</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border" style="color:#6366f1;"></div>
+    <p class="text-muted mt-2 small">Loading orders...</p>
+  </div>
+
+  <!-- Table -->
+  <div class="card" *ngIf="!loading">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let order of filteredOrders">
+
+            <td>
+              <span class="order-id">#{{ order.orderId }}</span>
+            </td>
+
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="cust-avatar">{{ order.customerId }}</div>
+                <span class="text-muted small">Customer #{{ order.customerId }}</span>
+              </div>
+            </td>
+
+            <td>
+              <span class="items-chip">{{ order.items?.length || 0 }} item(s)</span>
+            </td>
+
+            <td class="fw-semibold">R{{ order.totalAmount | number:'1.2-2' }}</td>
+
+            <td>
+              <span [class]="getStatusClass(order.status)">
+                <i [class]="'bi ' + getStatusIcon(order.status) + ' me-1'"></i>
+                {{ order.status }}
+              </span>
+            </td>
+
+            <td class="text-muted small">{{ order.createdAt | date:'dd MMM yyyy' }}</td>
+
+            <td>
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-ghost-primary"
+                        (click)="openOrderModal(order)" title="View & Update">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-sm btn-ghost-danger"
+                        (click)="cancelOrder(order)"
+                        [disabled]="order.status === 'CANCELLED' || order.status === 'DELIVERED'"
+                        title="Cancel Order">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+
+          <tr *ngIf="filteredOrders.length === 0">
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-receipt"></i></div>
+                <p>No orders found</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Order Modal ─────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+
+<div class="modal d-block" *ngIf="showModal && selectedOrder" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold mb-0">Order #{{ selectedOrder.orderId }}</h5>
+          <p class="text-muted small mb-0 mt-1">
+            Placed {{ selectedOrder.createdAt | date:'dd MMM yyyy, HH:mm' }}
+          </p>
+        </div>
+        <button class="btn-close" (click)="closeModal()"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="alert alert-danger d-flex align-items-center gap-2"
+             *ngIf="errorMessage && showModal">
+          <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="order-info-grid mb-4">
+          <div class="info-item">
+            <span class="label">Customer ID</span>
+            <span class="value">#{{ selectedOrder.customerId }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Total Amount</span>
+            <span class="value" style="color:#6366f1;">R{{ selectedOrder.totalAmount | number:'1.2-2' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Order Date</span>
+            <span class="value">{{ selectedOrder.createdAt | date:'dd MMM yyyy' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Current Status</span>
+            <span [class]="getStatusClass(selectedOrder.status)">{{ selectedOrder.status }}</span>
+          </div>
+        </div>
+
+        <!-- Items -->
+        <h6 class="fw-bold mb-2 small text-uppercase" style="letter-spacing:.05em; color:#64748b;">
+          Order Items
+        </h6>
+        <div class="order-items mb-4">
+          <div class="order-item-row" *ngFor="let item of selectedOrder.items">
+            <span class="item-name">{{ item.productName }}</span>
+            <span class="item-qty text-muted">×{{ item.quantity }}</span>
+            <span class="item-price">R{{ (item.quantity * item.unitPrice) | number:'1.2-2' }}</span>
+          </div>
+          <div class="order-item-row" *ngIf="!selectedOrder.items?.length">
+            <span class="text-muted small">No item details available</span>
+          </div>
+        </div>
+
+        <!-- Update Status -->
+        <h6 class="fw-bold mb-2 small text-uppercase" style="letter-spacing:.05em; color:#64748b;">
+          Update Status
+        </h6>
+        <div class="d-flex gap-2">
+          <select class="form-select" [(ngModel)]="newStatus">
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+          <button class="btn btn-primary px-4" (click)="updateStatus()">Update</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>

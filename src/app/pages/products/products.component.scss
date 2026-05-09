@@ -1,0 +1,21 @@
+.products-page {
+  padding: 32px;
+  max-width: 1400px;
+}
+
+.product-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.product-desc {
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.product-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #6366f1;
+}

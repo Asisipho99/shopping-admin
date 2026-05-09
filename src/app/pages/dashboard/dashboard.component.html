@@ -1,0 +1,150 @@
+<div class="dashboard-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Welcome back — here's what's happening today</p>
+    </div>
+    <div class="header-date">
+      <i class="bi bi-calendar3 me-2"></i>
+      {{ today | date:'EEEE, d MMMM yyyy' }}
+    </div>
+  </div>
+
+  <!-- Errors -->
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4"
+       *ngFor="let err of errors">
+    <i class="bi bi-exclamation-circle-fill"></i><span>{{ err }}</span>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="row g-4 mb-4">
+
+    <div class="col-md-4">
+      <div class="card stat-card h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start justify-content-between mb-3">
+            <div class="stat-icon" style="background:#eef2ff; color:#6366f1;">
+              <i class="bi bi-box-seam"></i>
+            </div>
+            <span class="badge" style="background:#eef2ff; color:#6366f1;">Products</span>
+          </div>
+          <div class="stat-value">{{ totalProducts }}</div>
+          <div class="stat-label">Total Products</div>
+          <a routerLink="/products" class="stat-link" style="color:#6366f1;">
+            Manage catalogue <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card stat-card h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start justify-content-between mb-3">
+            <div class="stat-icon" style="background:#ecfdf5; color:#10b981;">
+              <i class="bi bi-receipt"></i>
+            </div>
+            <span class="badge" style="background:#ecfdf5; color:#10b981;">Orders</span>
+          </div>
+          <div class="stat-value">{{ totalOrders }}</div>
+          <div class="stat-label">Total Orders</div>
+          <a routerLink="/orders" class="stat-link" style="color:#10b981;">
+            View all orders <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card stat-card h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start justify-content-between mb-3">
+            <div class="stat-icon" style="background:#fef2f2; color:#ef4444;">
+              <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <span class="badge" style="background:#fef2f2; color:#ef4444;">Alerts</span>
+          </div>
+          <div class="stat-value">{{ lowStockCount }}</div>
+          <div class="stat-label">Low Stock Alerts</div>
+          <a routerLink="/inventory" class="stat-link" style="color:#ef4444;">
+            Check inventory <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Orders -->
+  <div class="card">
+    <div class="card-body p-0">
+
+      <div class="table-header">
+        <div>
+          <h5 class="table-title">Recent Orders</h5>
+          <p class="table-subtitle">Last 5 orders placed</p>
+        </div>
+        <a routerLink="/orders" class="btn btn-sm btn-outline-primary">
+          View all <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" style="color:#6366f1;"></div>
+        <p class="text-muted mt-2 small">Loading orders...</p>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" *ngIf="!loading">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let order of recentOrders">
+              <td>
+                <span class="order-id">#{{ order.orderId }}</span>
+              </td>
+              <td>
+                <div class="customer-cell">
+                  <div class="customer-avatar">{{ order.customerId }}</div>
+                  <span>Customer #{{ order.customerId }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="items-badge">{{ order.items?.length || 0 }} item(s)</span>
+              </td>
+              <td class="fw-semibold">R{{ order.totalAmount | number:'1.2-2' }}</td>
+              <td>
+                <span [class]="getStatusClass(order.status)">
+                  {{ order.status }}
+                </span>
+              </td>
+              <td class="text-muted">{{ order.createdAt | date:'dd MMM yyyy' }}</td>
+            </tr>
+            <tr *ngIf="recentOrders.length === 0">
+              <td colspan="6">
+                <div class="empty-state">
+                  <div class="empty-icon"><i class="bi bi-receipt"></i></div>
+                  <p>No orders yet</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+</div>

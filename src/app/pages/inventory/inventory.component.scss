@@ -1,0 +1,67 @@
+.inventory-page {
+  padding: 32px;
+  max-width: 1400px;
+}
+
+.low-stock-badge {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+}
+
+.low-stock-row td {
+  background: #fff9f9 !important;
+}
+
+// ── Stock Bar ──────────────────────────────────────────────────
+.stock-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  .stock-pct { font-size: 0.72rem; white-space: nowrap; }
+  .progress { flex: 1; }
+}
+
+// ── Qty Badge ──────────────────────────────────────────────────
+.qty-badge {
+  font-size: 1rem;
+  font-weight: 700;
+  &.qty-danger { color: #ef4444; }
+  &.qty-success { color: #10b981; }
+}
+
+// ── Status Chip ────────────────────────────────────────────────
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+
+  &.chip-success {
+    background: #ecfdf5;
+    color: #065f46;
+  }
+  &.chip-danger {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+}
+
+// ── Restock Button ─────────────────────────────────────────────
+.restock-btn {
+  background: #eef2ff;
+  color: #6366f1;
+  border: 1px solid #c7d2fe;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 7px !important;
+  &:hover { background: #6366f1; color: #fff; border-color: #6366f1; }
+}
