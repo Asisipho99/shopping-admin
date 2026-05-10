@@ -82,8 +82,8 @@ export class OrdersComponent implements OnInit {
         this.loadOrders();
         setTimeout(() => this.successMessage = '', 3000);
       },
-      error: () => {
-        this.errorMessage = 'Failed to update order status.';
+      error: (err) => {
+        this.errorMessage = err.error?.message || err.error?.error || 'Failed to update order status.';
         this.updating     = false;
       }
     });
@@ -97,7 +97,7 @@ export class OrdersComponent implements OnInit {
         this.loadOrders();
         setTimeout(() => this.successMessage = '', 3000);
       },
-      error: () => this.errorMessage = 'Failed to cancel order.'
+      error: (err) => this.errorMessage = err.error?.message || 'Failed to cancel order.'
     });
   }
 
