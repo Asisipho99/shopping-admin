@@ -39,9 +39,9 @@ export class DashboardComponent implements OnInit {
     let completed = 0;
     const done = () => { if (++completed === 3) this.loading = false; };
 
-    this.productService.getAll().subscribe({
-      next: (p) => { this.totalProducts = p.length; done(); },
-      error: ()  => { this.errors.push('Failed to load products.'); done(); }
+    this.productService.getAll(0, 1000).subscribe({
+      next: (page) => { this.totalProducts = page.totalElements; done(); },
+      error: ()     => { this.errors.push('Failed to load products.'); done(); }
     });
 
     this.orderService.getAll().subscribe({

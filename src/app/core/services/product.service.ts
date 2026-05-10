@@ -5,6 +5,15 @@ import { map } from 'rxjs/operators';
 import { Product } from '../../models/product.model';
 import { environment } from '../../../environments/environment';
 
+export interface PageResponse<T> {
+  content:       T[];
+  page:          number;
+  size:          number;
+  totalElements: number;
+  totalPages:    number;
+  last:          boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
 
@@ -12,9 +21,6 @@ export class ProductService {
 
   constructor(private http: HttpClient) {}
 
-  // Normalize fields that come back in non-standard formats from the backend:
-  // - createdAt: Java LocalDateTime serializes as [y,m,d,h,min,s] array by default
-  // - price: BigDecimal comes as a number, ensure it stays a number
   private normalize(p: any): Product {
     return {
       ...p,
@@ -26,9 +32,9 @@ export class ProductService {
     };
   }
 
-  getAll(): Observable<Product[]> {
-    return this.http.get<any[]>(this.url).pipe(
-      map(list => list.map(p => this.normalize(p)))
+  getAll(page = 0, size = 20): Observable<PageResponse<Product>> {
+    return this.http.get<any>(`${this.url}?page=${page}&size=${size}`).pipe(
+      map(res => ({ ...res, content: res.content.map((p: any) => this.normalize(p)) }))
     );
   }
 

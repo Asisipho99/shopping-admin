@@ -50,10 +50,11 @@ export class ProductsComponent implements OnInit {
 
   loadProducts() {
     this.loading = true;
-    this.productService.getAll().subscribe({
-      next: (data) => {
-        this.products         = data;
-        this.filteredProducts = data;
+    // Admin loads all products (large page size) for full management view
+    this.productService.getAll(0, 200).subscribe({
+      next: (page) => {
+        this.products         = page.content;
+        this.filteredProducts = page.content;
         this.loading          = false;
       },
       error: () => {
