@@ -95,7 +95,14 @@ export class OrdersComponent implements OnInit {
       },
       error: (err) => {
         clearTimeout(timeout);
-        this.errorMessage = err.error?.message || err.error?.error || err.message || 'Failed to update order status.';
+        // err.error can be a string or an object depending on the response
+        let msg = 'Failed to update order status.';
+        if (err.error) {
+          msg = typeof err.error === 'string'
+            ? err.error
+            : err.error.message || err.error.error || msg;
+        }
+        this.errorMessage = msg;
         this.updating     = false;
       },
       complete: () => {

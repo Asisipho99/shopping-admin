@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { Order } from '../../models/order.model';
 import { environment } from '../../../environments/environment';
 
@@ -43,13 +43,14 @@ export class OrderService {
 
   updateStatus(orderId: number, status: string): Observable<Order> {
     return this.http.put<any>(`${this.url}/${orderId}/status?status=${status}`, {}).pipe(
-      map(o => this.normalize(o))
+      map(o => this.normalize(o)),
+      catchError(err => throwError(() => err))
     );
   }
 
   cancelOrder(orderId: number): Observable<Order> {
     return this.http.put<any>(`${this.url}/${orderId}/cancel`, {}).pipe(
-      map(o => this.normalize(o))
+      map(o => this.normalize(o)),
+      catchError(err => throwError(() => err))
     );
-  }
-}
+  }}
