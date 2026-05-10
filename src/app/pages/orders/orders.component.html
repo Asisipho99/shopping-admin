@@ -212,7 +212,10 @@
           <select class="form-select" [(ngModel)]="newStatus">
             <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
           </select>
-          <button class="btn btn-primary px-4" (click)="updateStatus()">Update</button>
+          <button class="btn btn-primary px-4" (click)="updateStatus()" [disabled]="updating">
+            <span *ngIf="updating" class="spinner-border spinner-border-sm me-2"></span>
+            {{ updating ? 'Updating...' : 'Update' }}
+          </button>
         </div>
 
       </div>

@@ -16,6 +16,7 @@ export class OrdersComponent implements OnInit {
   orders:          Order[] = [];
   filteredOrders:  Order[] = [];
   loading          = true;
+  updating         = false;
   selectedOrder:   Order | null = null;
   showModal        = false;
   newStatus        = '';
@@ -71,16 +72,20 @@ export class OrdersComponent implements OnInit {
 
   updateStatus() {
     if (!this.selectedOrder) return;
+    this.updating = true;
     this.orderService.updateStatus(
         this.selectedOrder.orderId, this.newStatus).subscribe({
       next: () => {
-        this.successMessage = `Order #${this.selectedOrder!.orderId} 
-                               updated to ${this.newStatus}!`;
+        this.successMessage = `Order #${this.selectedOrder!.orderId} updated to ${this.newStatus}!`;
+        this.updating = false;
         this.closeModal();
         this.loadOrders();
         setTimeout(() => this.successMessage = '', 3000);
       },
-      error: () => this.errorMessage = 'Failed to update order status.'
+      error: () => {
+        this.errorMessage = 'Failed to update order status.';
+        this.updating     = false;
+      }
     });
   }
 
