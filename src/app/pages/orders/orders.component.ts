@@ -72,10 +72,21 @@ export class OrdersComponent implements OnInit {
 
   updateStatus() {
     if (!this.selectedOrder) return;
-    this.updating = true;
+    this.updating     = true;
+    this.errorMessage = '';
+
+    // Safety timeout — reset spinner if request hangs for more than 15s
+    const timeout = setTimeout(() => {
+      if (this.updating) {
+        this.updating     = false;
+        this.errorMessage = 'Request timed out. Please try again.';
+      }
+    }, 15000);
+
     this.orderService.updateStatus(
         this.selectedOrder.orderId, this.newStatus).subscribe({
       next: () => {
+        clearTimeout(timeout);
         this.successMessage = `Order #${this.selectedOrder!.orderId} updated to ${this.newStatus}!`;
         this.updating = false;
         this.closeModal();
@@ -83,8 +94,13 @@ export class OrdersComponent implements OnInit {
         setTimeout(() => this.successMessage = '', 3000);
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || err.error?.error || 'Failed to update order status.';
+        clearTimeout(timeout);
+        this.errorMessage = err.error?.message || err.error?.error || err.message || 'Failed to update order status.';
         this.updating     = false;
+      },
+      complete: () => {
+        clearTimeout(timeout);
+        this.updating = false;
       }
     });
   }
