@@ -1,0 +1,395 @@
+<div class="page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dataset</h1>
+      <p class="page-subtitle">
+        The external data the machine learning models are trained on
+      </p>
+    </div>
+    <button type="button" class="btn btn-outline-primary"
+            (click)="loadSource(); loadEda()" [disabled]="isBusy">
+      @if (isBusy) {
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Refreshing...
+      } @else {
+        <i class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>Refresh
+      }
+    </button>
+  </div>
+
+  <!-- ── Provenance ──────────────────────────────────────────────────── -->
+  <div class="card mb-4">
+    <div class="card-body p-4">
+      <h5 class="section-title mb-3">
+        <i class="bi bi-database me-2" aria-hidden="true"></i>Data source
+      </h5>
+
+      @if (source.isLoading) {
+        <app-loading-state message="Checking the dataset..." [size]="2" />
+      } @else if (source.isBlockingFailure) {
+        <app-error-state [error]="source.error!" (retry)="loadSource()" />
+      } @else if (source.data) {
+
+        @if (!source.data.available) {
+          <div class="alert alert-warning mb-0" role="status">
+            <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+            No dataset found on the service. Run
+            <code>python scripts/download_dataset.py</code> in the AI service.
+          </div>
+        } @else {
+          <div class="provenance">
+            <div class="prov-row">
+              <span class="prov-label">Dataset</span>
+              <span class="prov-value fw-semibold">{{ source.data.dataset.name }}</span>
+            </div>
+            <div class="prov-row">
+              <span class="prov-label">Origin</span>
+              <span class="prov-value">{{ source.data.dataset.origin }}</span>
+            </div>
+            <div class="prov-row">
+              <span class="prov-label">Coverage</span>
+              <span class="prov-value">{{ source.data.dataset.description }}</span>
+            </div>
+            <div class="prov-row">
+              <span class="prov-label">File</span>
+              <span class="prov-value">
+                @for (file of source.data.files; track file.name) {
+                  <code>{{ file.name }}</code>
+                  <span class="text-muted ms-2">{{ file.size_mb }} MB</span>
+                }
+              </span>
+            </div>
+          </div>
+
+          <div class="why-box mt-3">
+            <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>
+            {{ source.data.dataset.why }}
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- ── Raw shape ───────────────────────────────────────────────────── -->
+  @if (eda.data) {
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="card stat-card h-100">
+          <div class="card-body p-4">
+            <div class="stat-value">{{ eda.data.overview.rows | number }}</div>
+            <div class="stat-label">Rows (raw)</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card h-100">
+          <div class="card-body p-4">
+            <div class="stat-value">{{ eda.data.overview.columns }}</div>
+            <div class="stat-label">Columns</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card h-100">
+          <div class="card-body p-4">
+            <div class="stat-value text-danger">
+              {{ eda.data.overview.duplicate_rows | number }}
+            </div>
+            <div class="stat-label">
+              Duplicate rows ({{ eda.data.overview.duplicate_pct }}%)
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card h-100">
+          <div class="card-body p-4">
+            @if (eda.data.date_range.available) {
+              <div class="stat-value">{{ eda.data.date_range.span_days | number }}</div>
+              <div class="stat-label">Days covered</div>
+            } @else {
+              <div class="stat-value">&ndash;</div>
+              <div class="stat-label">No date range</div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Missing values ──────────────────────────────────────────────── -->
+  <div class="card mb-4">
+    <div class="card-body p-4">
+      <h5 class="section-title mb-1">
+        <i class="bi bi-question-octagon me-2" aria-hidden="true"></i>Missing values
+      </h5>
+      <p class="text-muted small mb-3">
+        Counted on the raw data, before any cleaning.
+      </p>
+
+      @if (eda.isLoading) {
+        <app-skeleton-table [rows]="4" [cols]="5"
+                            [headers]="['Column', 'Type', 'Missing', '%', 'Distinct']"
+                            message="Profiling the dataset..." />
+      } @else if (eda.isBlockingFailure) {
+        <app-error-state [error]="eda.error!" (retry)="loadEda()" />
+      } @else if (eda.data) {
+
+        @if (columnsWithMissing.length === 0) {
+          <p class="mb-0 text-success">
+            <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
+            No missing values in any column.
+          </p>
+        } @else {
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Type</th>
+                  <th class="text-end">Missing</th>
+                  <th style="width: 28%;">Share of rows</th>
+                  <th class="text-end">Distinct values</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of columnsWithMissing; track row.column) {
+                  <tr>
+                    <td><code>{{ row.column }}</code></td>
+                    <td class="text-muted small">{{ row.dtype }}</td>
+                    <td class="text-end fw-semibold">{{ row.missing | number }}</td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="meter flex-grow-1">
+                          <div class="meter-fill bg-danger"
+                               [style.width.%]="row.missing_pct"></div>
+                        </div>
+                        <span class="small text-muted"
+                              style="min-width:3.5rem;">{{ row.missing_pct }}%</span>
+                      </div>
+                    </td>
+                    <td class="text-end text-muted">{{ row.unique | number }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="text-muted small mb-0 mt-2">
+            {{ columnsWithoutMissing }} further column(s) have no missing values.
+          </p>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- ── Quality findings ────────────────────────────────────────────── -->
+  @if (eda.data && eda.data.quality_findings.length) {
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <h5 class="section-title mb-1">
+          <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>
+          Data quality findings
+        </h5>
+        <p class="text-muted small mb-3">
+          Each finding below is treated by a corresponding step in the cleaning
+          pipeline. Select one to see why it matters.
+        </p>
+
+        <div class="findings">
+          @for (finding of eda.data.quality_findings; track finding.issue) {
+            <div class="finding" [class.finding--open]="expandedFinding() === finding.issue">
+              <button type="button" class="finding-head"
+                      (click)="toggleFinding(finding.issue)"
+                      [attr.aria-expanded]="expandedFinding() === finding.issue">
+                <span class="finding-title">
+                  <i class="bi bi-exclamation-triangle-fill text-warning me-2"
+                     aria-hidden="true"></i>
+                  {{ finding.issue }}
+                </span>
+                <span class="finding-count">
+                  {{ finding.affected_rows | number }} rows
+                  <span class="text-muted">({{ finding.affected_pct }}%)</span>
+                  <i class="bi ms-2"
+                     [class.bi-chevron-down]="expandedFinding() !== finding.issue"
+                     [class.bi-chevron-up]="expandedFinding() === finding.issue"
+                     aria-hidden="true"></i>
+                </span>
+              </button>
+
+              @if (expandedFinding() === finding.issue) {
+                <div class="finding-body">
+                  <div class="mb-2">
+                    <span class="detail-label">Column</span>
+                    <code>{{ finding.column }}</code>
+                  </div>
+                  <div class="mb-2">
+                    <span class="detail-label">Why it matters</span>
+                    {{ finding.consequence }}
+                  </div>
+                  <div>
+                    <span class="detail-label">Treatment</span>
+                    {{ finding.treatment }}
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Cleaning ────────────────────────────────────────────────────── -->
+  <div class="card mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-start justify-content-between mb-3">
+        <div>
+          <h5 class="section-title mb-1">
+            <i class="bi bi-funnel me-2" aria-hidden="true"></i>
+            Cleaning and feature engineering
+          </h5>
+          <p class="text-muted small mb-0">
+            Runs the full pipeline and reports what each step removed.
+          </p>
+        </div>
+        <button type="button" class="btn btn-primary"
+                (click)="runPreparation()" [disabled]="preparation.isBusy">
+          @if (preparation.isBusy) {
+            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            Running...
+          } @else {
+            <i class="bi bi-play-fill me-2" aria-hidden="true"></i>Run preparation
+          }
+        </button>
+      </div>
+
+      @if (preparation.isLoading) {
+        <app-loading-state message="Cleaning the dataset..."
+                           hint="Reading the full file - this can take a minute." />
+      } @else if (preparation.isBlockingFailure) {
+        <app-error-state [error]="preparation.error!" (retry)="runPreparation()" />
+      } @else if (preparation.data) {
+
+        <!-- Before / after -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="ba-box">
+              <div class="ba-label">Rows before</div>
+              <div class="ba-value">{{ cleaningTotal?.rows_before | number }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="ba-box ba-box--good">
+              <div class="ba-label">Rows after</div>
+              <div class="ba-value">{{ cleaningTotal?.rows_after | number }}</div>
+              <div class="ba-note">{{ cleaningTotal?.retained_pct }}% retained</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="ba-box ba-box--bad">
+              <div class="ba-label">Rows removed</div>
+              <div class="ba-value">{{ cleaningTotal?.rows_removed | number }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Per-step audit trail -->
+        <div class="table-responsive mb-4">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Step</th>
+                <th class="text-end">Removed</th>
+                <th style="width: 26%;"></th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (step of cleaningSteps; track step.step) {
+                <tr>
+                  <td class="fw-semibold">{{ step.step }}</td>
+                  <td class="text-end">
+                    @if (step.rows_removed > 0) {
+                      <span class="text-danger">-{{ step.rows_removed | number }}</span>
+                    } @else if (step.values_imputed) {
+                      <span class="text-primary">
+                        {{ step.values_imputed | number }} imputed
+                      </span>
+                    } @else {
+                      <span class="text-muted">0</span>
+                    }
+                  </td>
+                  <td>
+                    @if (step.rows_removed > 0) {
+                      <div class="meter">
+                        <div class="meter-fill bg-danger"
+                             [style.width.%]="removalBarWidth(step.rows_removed)"></div>
+                      </div>
+                    }
+                  </td>
+                  <td class="text-muted small">{{ step.reason }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Engineered features -->
+        <h6 class="fw-bold mb-2">Engineered features</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <div class="mini-stat">
+              <div class="mini-value">{{ preparation.data.features.customers | number }}</div>
+              <div class="mini-label">Customers</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mini-stat">
+              <div class="mini-value">
+                {{ preparation.data.features.feature_columns.length }}
+              </div>
+              <div class="mini-label">Features</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mini-stat">
+              <div class="mini-value">
+                {{ preparation.data.features.positive_label_pct }}%
+              </div>
+              <div class="mini-label">Positive class</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mini-stat">
+              <div class="mini-value">{{ preparation.data.features.holdout_days }}</div>
+              <div class="mini-label">Holdout days</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          @for (column of preparation.data.features.feature_columns; track column) {
+            <span class="badge-feature">{{ column }}</span>
+          }
+          <span class="badge-feature badge-feature--label">
+            {{ preparation.data.features.label_column }} (label)
+          </span>
+        </div>
+
+        <div class="why-box">
+          <i class="bi bi-shield-check me-2" aria-hidden="true"></i>
+          {{ preparation.data.features.note }}
+        </div>
+
+      } @else {
+        <p class="text-muted mb-0">
+          Not run yet. Select <strong>Run preparation</strong> to clean the data and
+          build the feature table the models train on.
+        </p>
+      }
+    </div>
+  </div>
+
+</div>

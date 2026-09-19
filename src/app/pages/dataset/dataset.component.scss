@@ -1,0 +1,271 @@
+.page {
+  padding: 28px 32px 48px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 28px;
+}
+
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: #111827;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.section-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* ── Provenance ──────────────────────────────────────────────────────── */
+.provenance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.prov-row {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  align-items: baseline;
+}
+
+.prov-label {
+  flex: 0 0 6.5rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.prov-value {
+  color: #111827;
+}
+
+.why-box {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+  color: #3730a3;
+  line-height: 1.5;
+}
+
+/* ── Stats ───────────────────────────────────────────────────────────── */
+.stat-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.mini-stat {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.mini-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.mini-label {
+  font-size: 0.74rem;
+  color: #6b7280;
+}
+
+/* ── Meters ──────────────────────────────────────────────────────────── */
+.meter {
+  height: 0.5rem;
+  background: #f1f5f9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 99px;
+  min-width: 2px;
+  transition: width 0.25s ease;
+}
+
+/* ── Findings accordion ──────────────────────────────────────────────── */
+.findings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.finding {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.finding--open {
+  border-color: #c7d2fe;
+}
+
+.finding-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.9rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.finding-head:hover {
+  background: #f9fafb;
+}
+
+.finding-title {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.finding-count {
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: #374151;
+}
+
+.finding-body {
+  padding: 0.25rem 0.9rem 0.9rem;
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.55;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.detail-label {
+  display: inline-block;
+  min-width: 8rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+/* ── Before / after ──────────────────────────────────────────────────── */
+.ba-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: #f9fafb;
+}
+
+.ba-box--good {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.ba-box--bad {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.ba-label {
+  font-size: 0.76rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ba-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.ba-note {
+  font-size: 0.78rem;
+  color: #047857;
+  font-weight: 600;
+}
+
+/* ── Feature badges ──────────────────────────────────────────────────── */
+.badge-feature {
+  display: inline-block;
+  padding: 0.28rem 0.6rem;
+  border-radius: 99px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #334155;
+}
+
+.badge-feature--label {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.table > :not(caption) > * > * {
+  padding: 0.6rem 0.65rem;
+}
+
+thead th {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+  font-weight: 700;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 20px 16px 36px;
+  }
+
+  .page-header {
+    flex-direction: column;
+  }
+
+  .prov-row {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
