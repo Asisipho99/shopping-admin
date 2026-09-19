@@ -49,5 +49,19 @@ export const routes: Routes = [
       import('./pages/inventory/inventory.component')
         .then(m => m.InventoryComponent)
   },
+  {
+    path: 'dataset',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/dataset/dataset.component')
+        .then(m => m.DatasetComponent)
+  },
+  {
+    path: 'models',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/models/models.component')
+        .then(m => m.ModelsComponent)
+  },
   { path: '**', redirectTo: 'dashboard' }
 ];

@@ -1,0 +1,444 @@
+<div class="page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Models</h1>
+      <p class="page-subtitle">
+        Algorithms trained on the prepared dataset, and how they compare
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-primary"
+              (click)="loadStatus(); loadReport()"
+              [disabled]="status.isBusy || report.isBusy">
+        <i class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>Refresh
+      </button>
+      <button type="button" class="btn btn-primary"
+              (click)="train()" [disabled]="training()">
+        @if (training()) {
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+          Training...
+        } @else {
+          <i class="bi bi-cpu me-2" aria-hidden="true"></i>Train all algorithms
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Status strip ────────────────────────────────────────────────── -->
+  @if (status.data) {
+    <div class="status-strip mb-4">
+      <div class="status-item">
+        <span class="status-dot"
+              [class.on]="status.data.supervised_trained"
+              [class.off]="!status.data.supervised_trained"></span>
+        Supervised models
+        <strong class="ms-1">
+          {{ status.data.supervised_trained ? 'ready' : 'not trained' }}
+        </strong>
+      </div>
+      <div class="status-item">
+        <span class="status-dot"
+              [class.on]="status.data.segmentation_trained"
+              [class.off]="!status.data.segmentation_trained"></span>
+        Segmentation
+        <strong class="ms-1">
+          {{ status.data.segmentation_trained ? 'ready' : 'not trained' }}
+        </strong>
+      </div>
+      <div class="status-item">
+        <i class="bi bi-diagram-3 me-2" aria-hidden="true"></i>
+        <strong>{{ status.data.algorithm_count }}</strong> algorithms
+      </div>
+      @if (status.data.last_trained) {
+        <div class="status-item text-muted">
+          <i class="bi bi-clock-history me-2" aria-hidden="true"></i>
+          Last trained {{ status.data.last_trained }}
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Training in progress ────────────────────────────────────────── -->
+  @if (training() && !hasReport) {
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <app-loading-state message="Training four algorithms..."
+                           hint="Fitting logistic regression, random forest, a neural network and K-Means." />
+      </div>
+    </div>
+  }
+
+  <!-- ── Nothing trained yet ─────────────────────────────────────────── -->
+  @if (report.isLoading) {
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <app-skeleton-table [rows]="4" [cols]="6"
+                            [headers]="['Algorithm', 'Family', 'Accuracy', 'Precision', 'Recall', 'F1']"
+                            message="Loading the comparison..." />
+      </div>
+    </div>
+  } @else if (report.isBlockingFailure) {
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <app-error-state [error]="report.error!" (retry)="loadReport()" />
+      </div>
+    </div>
+  } @else if (!hasReport && !training()) {
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <app-empty-state
+          icon="bi-cpu"
+          title="No models trained yet"
+          message="Prepare the dataset first, then train. Training fits all four algorithms and produces the comparison." />
+        <div class="text-center">
+          <a routerLink="/dataset" class="btn btn-outline-primary me-2">
+            <i class="bi bi-database me-2" aria-hidden="true"></i>Go to dataset
+          </a>
+          <button type="button" class="btn btn-primary" (click)="train()">
+            <i class="bi bi-cpu me-2" aria-hidden="true"></i>Train now
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Comparison ──────────────────────────────────────────────────── -->
+  @if (hasReport && report.data) {
+
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
+          <div>
+            <h5 class="section-title mb-1">
+              <i class="bi bi-bar-chart-line me-2" aria-hidden="true"></i>
+              Algorithm comparison
+            </h5>
+            <p class="text-muted small mb-0">
+              All models trained on the same stratified split
+              ({{ report.data.split.train_rows | number }} train /
+              {{ report.data.split.test_rows | number }} test), so the scores are
+              directly comparable.
+            </p>
+          </div>
+          <div class="metric-toggle" role="group" aria-label="Metric to chart">
+            @for (option of metricOptions; track option.key) {
+              <button type="button" class="metric-btn"
+                      [class.active]="metric() === option.key"
+                      (click)="metric.set(option.key)">
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Bars for the selected metric -->
+        <div class="bars mb-4">
+          @for (row of comparison; track row.algorithm) {
+            <div class="bar-row">
+              <div class="bar-label">
+                {{ row.algorithm }}
+                @if (isBest(row)) {
+                  <span class="best-pill">best</span>
+                }
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [class.bar-fill--best]="isBest(row)"
+                     [style.width.%]="barWidth(row)"></div>
+              </div>
+              <div class="bar-value">{{ metricValue(row) | number: '1.4-4' }}</div>
+            </div>
+          }
+        </div>
+
+        <!-- Full metric table -->
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Family</th>
+                <th class="text-end">Accuracy</th>
+                <th class="text-end">Precision</th>
+                <th class="text-end">Recall</th>
+                <th class="text-end">F1</th>
+                <th class="text-end">ROC-AUC</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of comparison; track row.algorithm) {
+                <tr [class.row-best]="isBest(row)">
+                  <td class="fw-semibold">
+                    {{ row.algorithm }}
+                    @if (isBest(row)) {
+                      <i class="bi bi-star-fill text-warning ms-1" aria-hidden="true"></i>
+                    }
+                  </td>
+                  <td class="text-muted small">{{ row.family }}</td>
+                  <td class="text-end">{{ row.accuracy | number: '1.4-4' }}</td>
+                  <td class="text-end">{{ row.precision | number: '1.4-4' }}</td>
+                  <td class="text-end">{{ row.recall | number: '1.4-4' }}</td>
+                  <td class="text-end">{{ row.f1 | number: '1.4-4' }}</td>
+                  <td class="text-end">
+                    @if (row.roc_auc !== null) {
+                      {{ row.roc_auc | number: '1.4-4' }}
+                    } @else {
+                      <span class="text-muted">&ndash;</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-muted small mb-0 mt-3">
+          Best supervised model: <strong>{{ report.data.best_supervised.algorithm }}</strong>
+          &mdash; chosen by {{ report.data.best_supervised.chosen_by }}.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Confusion matrices ────────────────────────────────────────── -->
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <h5 class="section-title mb-1">
+          <i class="bi bi-grid-3x3 me-2" aria-hidden="true"></i>Confusion matrices
+        </h5>
+        <p class="text-muted small mb-3">
+          On the held-out test set. Shows where each model is wrong, not just how
+          often.
+        </p>
+
+        <div class="row g-3">
+          @for (row of comparison; track row.algorithm) {
+            <div class="col-md-4">
+              <div class="cm-card">
+                <div class="cm-title">{{ row.algorithm }}</div>
+                <div class="cm-grid">
+                  <div class="cm-cell cm-good">
+                    <span class="cm-num">{{ row.confusion_matrix.true_negative | number }}</span>
+                    <span class="cm-tag">True negative</span>
+                  </div>
+                  <div class="cm-cell cm-bad">
+                    <span class="cm-num">{{ row.confusion_matrix.false_positive | number }}</span>
+                    <span class="cm-tag">False positive</span>
+                  </div>
+                  <div class="cm-cell cm-bad">
+                    <span class="cm-num">{{ row.confusion_matrix.false_negative | number }}</span>
+                    <span class="cm-tag">False negative</span>
+                  </div>
+                  <div class="cm-cell cm-good">
+                    <span class="cm-num">{{ row.confusion_matrix.true_positive | number }}</span>
+                    <span class="cm-tag">True positive</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Segmentation ──────────────────────────────────────────────── -->
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <h5 class="section-title mb-1">
+          <i class="bi bi-diagram-2 me-2" aria-hidden="true"></i>
+          Customer segmentation ({{ report.data.segmentation.algorithm }})
+        </h5>
+        <p class="text-muted small mb-3">
+          {{ report.data.segmentation.family }}. Uses
+          {{ report.data.segmentation.features_used.join(', ') }}, with
+          {{ report.data.segmentation.preprocessing }}. k =
+          {{ report.data.segmentation.chosen_k }}, chosen by
+          {{ report.data.segmentation.selection_metric }} (silhouette
+          {{ report.data.segmentation.metrics.silhouette }}).
+        </p>
+
+        <div class="row g-3 mb-3">
+          @for (cluster of report.data.segmentation.clusters; track cluster.cluster) {
+            <div class="col-md-6 col-lg-4">
+              <div class="cluster-card">
+                <div class="d-flex align-items-start justify-content-between mb-2">
+                  <span class="cluster-id">Cluster {{ cluster.cluster }}</span>
+                  <span class="cluster-share">{{ cluster.share_pct }}%</span>
+                </div>
+                <div class="cluster-label">{{ cluster.label }}</div>
+                <div class="cluster-count">
+                  {{ cluster.customers | number }} customers
+                </div>
+                <dl class="cluster-stats">
+                  @if (cluster.median_recency_days !== undefined) {
+                    <div>
+                      <dt>Median recency</dt>
+                      <dd>{{ cluster.median_recency_days | number }} days</dd>
+                    </div>
+                  }
+                  @if (cluster.median_frequency !== undefined) {
+                    <div>
+                      <dt>Median orders</dt>
+                      <dd>{{ cluster.median_frequency | number }}</dd>
+                    </div>
+                  }
+                  @if (cluster.median_monetary_total !== undefined) {
+                    <div>
+                      <dt>Median spend</dt>
+                      <dd>{{ cluster.median_monetary_total | number: '1.0-0' }}</dd>
+                    </div>
+                  }
+                  @if (cluster.repurchase_rate_pct !== undefined) {
+                    <div>
+                      <dt>Repurchase rate</dt>
+                      <dd>{{ cluster.repurchase_rate_pct }}%</dd>
+                    </div>
+                  }
+                </dl>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="k-scores">
+          <span class="text-muted small me-2">Silhouette by k:</span>
+          @for (candidate of report.data.segmentation.candidate_scores; track candidate.k) {
+            <span class="k-pill"
+                  [class.k-pill--chosen]="candidate.k === report.data.segmentation.chosen_k">
+              k={{ candidate.k }}: {{ candidate.silhouette }}
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Prediction ────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-body p-4">
+        <h5 class="section-title mb-1">
+          <i class="bi bi-magic me-2" aria-hidden="true"></i>Predict a customer
+        </h5>
+        <p class="text-muted small mb-3">
+          Enter feature values and score them against a trained model. This is the
+          model being applied, not a stored result.
+        </p>
+
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold" for="model-select">Model</label>
+              <select id="model-select" class="form-select"
+                      [ngModel]="selectedModel()"
+                      (ngModelChange)="selectedModel.set($event)">
+                @for (model of status.data?.available_models ?? []; track model) {
+                  <option [value]="model">{{ model }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="row g-2">
+              @for (column of featureColumns(); track column) {
+                <div class="col-sm-6">
+                  <label class="form-label small text-muted" [attr.for]="'f-' + column">
+                    {{ column }}
+                  </label>
+                  <input [id]="'f-' + column" type="number" class="form-control"
+                         [value]="featureValue(column)"
+                         (input)="updateFeature(column, $any($event.target).value)">
+                </div>
+              }
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+              <button type="button" class="btn btn-primary"
+                      (click)="runPrediction()" [disabled]="prediction.isBusy">
+                @if (prediction.isBusy) {
+                  <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                  Scoring...
+                } @else {
+                  <i class="bi bi-lightning-charge me-2" aria-hidden="true"></i>Predict
+                }
+              </button>
+              <button type="button" class="btn btn-outline-secondary"
+                      (click)="resetFeatures()">Reset</button>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            @if (prediction.isLoading) {
+              <app-loading-state message="Scoring..." [size]="2" />
+            } @else if (prediction.isFailed) {
+              <app-error-state [error]="prediction.error!" [showRetry]="false" />
+            } @else if (prediction.data) {
+              <div class="result"
+                   [class.result--yes]="prediction.data.prediction === 1"
+                   [class.result--no]="prediction.data.prediction === 0">
+                <div class="result-icon">
+                  <i class="bi"
+                     [class.bi-check-circle-fill]="prediction.data.prediction === 1"
+                     [class.bi-x-circle-fill]="prediction.data.prediction === 0"
+                     aria-hidden="true"></i>
+                </div>
+                <div class="result-headline">{{ prediction.data.meaning }}</div>
+                @if (prediction.data.probability_repurchase !== null) {
+                  <div class="result-prob">
+                    {{ prediction.data.probability_repurchase * 100 | number: '1.1-1' }}%
+                    probability
+                  </div>
+                  <div class="prob-track">
+                    <div class="prob-fill"
+                         [style.width.%]="prediction.data.probability_repurchase * 100"></div>
+                  </div>
+                }
+                <div class="result-meta">
+                  Model: <strong>{{ prediction.data.model }}</strong>
+                  @if (prediction.data.segment !== null && prediction.data.segment !== undefined) {
+                    <br>Segment: <strong>cluster {{ prediction.data.segment }}</strong>
+                  }
+                </div>
+              </div>
+            } @else {
+              <div class="result result--idle">
+                <i class="bi bi-sliders" aria-hidden="true"></i>
+                <p class="mb-0 small">
+                  Adjust the features and select Predict to score a customer.
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Feature weights for the selected model -->
+        @if (selectedFeatureWeights.length) {
+          <hr class="my-4">
+          <h6 class="fw-bold mb-1">
+            What drives {{ selectedModel() }}
+          </h6>
+          <p class="text-muted small mb-3">
+            @if (selectedFeatureWeights[0].importance !== undefined) {
+              Relative feature importance.
+            } @else {
+              Model coefficients; bar length shows magnitude, sign shows direction.
+            }
+          </p>
+          <div class="weights">
+            @for (weight of selectedFeatureWeights; track weight.feature) {
+              <div class="weight-row">
+                <div class="weight-label">{{ weight.feature }}</div>
+                <div class="weight-track">
+                  <div class="weight-fill"
+                       [class.weight-fill--neg]="(weight.coefficient ?? 0) < 0"
+                       [style.width.%]="weightBarWidth(weight)"></div>
+                </div>
+                <div class="weight-value">
+                  {{ (weight.importance ?? weight.coefficient) | number: '1.3-3' }}
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div>
