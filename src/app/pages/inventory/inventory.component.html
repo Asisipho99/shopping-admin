@@ -9,12 +9,19 @@
   </div>
 
   <!-- Alerts -->
-  <div class="alert alert-success d-flex align-items-center gap-2" *ngIf="successMessage">
-    <i class="bi bi-check-circle-fill"></i><span>{{ successMessage }}</span>
-  </div>
-  <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="errorMessage && !showModal">
-    <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
-  </div>
+  <!-- Action outcomes are reported by toast now, not an inline banner. -->
+  <!-- A failed refresh while rows are still on screen -->
+  @if (state.isPartialFailure) {
+    <div class="alert alert-warning d-flex align-items-center gap-2" role="status">
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      <span class="flex-grow-1">{{ state.error!.message }}</span>
+      @if (state.error!.retryable) {
+        <button type="button" class="btn btn-sm btn-outline-dark" (click)="loadData()">
+          Try again
+        </button>
+      }
+    </div>
+  }
 
   <!-- Summary Cards -->
   <div class="row g-3 mb-4">
@@ -71,13 +78,20 @@
   </div>
 
   <!-- Loading -->
-  <div *ngIf="loading" class="text-center py-5">
-    <div class="spinner-border" style="color:#6366f1;"></div>
-    <p class="text-muted mt-2 small">Loading inventory...</p>
-  </div>
+  @if (state.isLoading) {
+    <app-skeleton-table [rows]="6" [cols]="5" message="Loading inventory..."
+                        [headers]="['Product','Stock','Threshold','Status','Action']" />
+  }
+
+  <!-- Could not load at all -->
+  @if (state.isBlockingFailure) {
+    <app-error-state [error]="state.error!" [busy]="state.isRefreshing"
+                     (retry)="loadData()" />
+  }
 
   <!-- Table -->
-  <div class="card" *ngIf="!loading">
+  <div class="card" *ngIf="state.isReady || state.isPartialFailure"
+       [attr.aria-busy]="state.isRefreshing">
     <div class="table-responsive">
       <table class="table mb-0">
         <thead>
@@ -168,9 +182,9 @@
 </div>
 
 <!-- ── Restock Modal ───────────────────────────────────────────── -->
-<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+<div class="modal-backdrop" *ngIf="showModal()" (click)="closeModal()"></div>
 
-<div class="modal d-block" *ngIf="showModal && selectedItem" tabindex="-1">
+<div class="modal d-block" *ngIf="showModal() && selectedItem" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" (click)="$event.stopPropagation()">
 
@@ -194,8 +208,8 @@
         </div>
 
         <div class="alert alert-danger d-flex align-items-center gap-2"
-             *ngIf="errorMessage && showModal">
-          <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
+             *ngIf="modalError() && showModal()">
+          <i class="bi bi-exclamation-circle-fill"></i><span>{{ modalError() }}</span>
         </div>
 
         <div class="mb-3">
@@ -216,9 +230,9 @@
 
       <div class="modal-footer">
         <button class="btn btn-outline-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-primary px-4" (click)="saveStock()" [disabled]="saving">
-          <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
-          {{ saving ? 'Saving...' : 'Update Stock' }}
+        <button class="btn btn-primary px-4" (click)="saveStock()" [disabled]="saving()">
+          <span *ngIf="saving()" class="spinner-border spinner-border-sm me-2"></span>
+          {{ saving() ? 'Saving...' : 'Update Stock' }}
         </button>
       </div>
 

@@ -36,9 +36,9 @@
       </div>
 
       <!-- Error -->
-      <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="error">
+      <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="error()">
         <i class="bi bi-exclamation-circle-fill"></i>
-        <span>{{ error }}</span>
+        <span>{{ error() }}</span>
       </div>
 
       <!-- Email -->
@@ -73,10 +73,10 @@
 
       <!-- Submit -->
       <button class="btn btn-primary w-100 login-btn"
-              (click)="login()" [disabled]="loading">
-        <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
-        <i *ngIf="!loading" class="bi bi-arrow-right-circle me-2"></i>
-        {{ loading ? 'Signing in...' : 'Sign In' }}
+              (click)="login()" [disabled]="loading()">
+        <span *ngIf="loading()" class="spinner-border spinner-border-sm me-2"></span>
+        <i *ngIf="!loading()" class="bi bi-arrow-right-circle me-2"></i>
+        {{ loading() ? 'Signing in...' : 'Sign In' }}
       </button>
 
       <p class="text-center mt-3 mb-0" style="font-size:.8rem;color:#6b7280;">
