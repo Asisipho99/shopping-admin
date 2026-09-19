@@ -12,13 +12,18 @@
     </div>
   </div>
 
-  <!-- Alerts -->
-  <div class="alert alert-success d-flex align-items-center gap-2" *ngIf="successMessage">
-    <i class="bi bi-check-circle-fill"></i><span>{{ successMessage }}</span>
-  </div>
-  <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="errorMessage && !showModal">
-    <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
-  </div>
+  <!-- Action outcomes are reported by toast. This covers a failed refresh. -->
+  @if (state.isPartialFailure) {
+    <div class="alert alert-warning d-flex align-items-center gap-2" role="status">
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      <span class="flex-grow-1">{{ state.error!.message }}</span>
+      @if (state.error!.retryable) {
+        <button type="button" class="btn btn-sm btn-outline-dark" (click)="loadOrders()">
+          Try again
+        </button>
+      }
+    </div>
+  }
 
   <!-- Status Summary Pills -->
   <div class="status-summary mb-4">
@@ -64,13 +69,20 @@
   </div>
 
   <!-- Loading -->
-  <div *ngIf="loading" class="text-center py-5">
-    <div class="spinner-border" style="color:#6366f1;"></div>
-    <p class="text-muted mt-2 small">Loading orders...</p>
-  </div>
+  @if (state.isLoading) {
+    <app-skeleton-table [rows]="6" [cols]="6" message="Loading orders..."
+                        [headers]="['Order','Customer','Items','Total','Status','Date']" />
+  }
+
+  <!-- Could not load at all -->
+  @if (state.isBlockingFailure) {
+    <app-error-state [error]="state.error!" [busy]="state.isRefreshing"
+                     (retry)="loadOrders()" />
+  }
 
   <!-- Table -->
-  <div class="card" *ngIf="!loading">
+  <div class="card" *ngIf="state.isReady || state.isPartialFailure"
+       [attr.aria-busy]="state.isRefreshing">
     <div class="table-responsive">
       <table class="table mb-0">
         <thead>
@@ -146,9 +158,9 @@
 </div>
 
 <!-- ── Order Modal ─────────────────────────────────────────────── -->
-<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+<div class="modal-backdrop" *ngIf="showModal()" (click)="closeModal()"></div>
 
-<div class="modal d-block" *ngIf="showModal && selectedOrder" tabindex="-1">
+<div class="modal d-block" *ngIf="showModal() && selectedOrder" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" (click)="$event.stopPropagation()">
 
@@ -165,8 +177,8 @@
       <div class="modal-body">
 
         <div class="alert alert-danger d-flex align-items-center gap-2"
-             *ngIf="errorMessage && showModal">
-          <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
+             *ngIf="modalError() && showModal()">
+          <i class="bi bi-exclamation-circle-fill"></i><span>{{ modalError() }}</span>
         </div>
 
         <!-- Info Grid -->
@@ -212,9 +224,9 @@
           <select class="form-select" [(ngModel)]="newStatus">
             <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
           </select>
-          <button class="btn btn-primary px-4" (click)="updateStatus()" [disabled]="updating">
-            <span *ngIf="updating" class="spinner-border spinner-border-sm me-2"></span>
-            {{ updating ? 'Updating...' : 'Update' }}
+          <button class="btn btn-primary px-4" (click)="updateStatus()" [disabled]="updating()">
+            <span *ngIf="updating()" class="spinner-border spinner-border-sm me-2"></span>
+            {{ updating() ? 'Updating...' : 'Update' }}
           </button>
         </div>
 

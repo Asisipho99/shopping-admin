@@ -12,11 +12,25 @@
     </div>
   </div>
 
-  <!-- Errors -->
-  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4"
-       *ngFor="let err of errors">
-    <i class="bi bi-exclamation-circle-fill"></i><span>{{ err }}</span>
-  </div>
+  <!--
+    One banner for the whole page rather than one per failed call, with a single
+    retry that reloads every tile. Each tile also shows its own state below.
+  -->
+  @if (anyFailed) {
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4" role="status">
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      <span class="flex-grow-1">Some dashboard data could not be loaded.</span>
+      <button type="button" class="btn btn-sm btn-outline-dark"
+              (click)="loadAll()" [disabled]="isBusy">
+        @if (isBusy) {
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+          Retrying...
+        } @else {
+          Retry
+        }
+      </button>
+    </div>
+  }
 
   <!-- Stat Cards -->
   <div class="row g-4 mb-4">
@@ -30,8 +44,19 @@
             </div>
             <span class="badge" style="background:#eef2ff; color:#6366f1;">Products</span>
           </div>
-          <div class="stat-value">{{ totalProducts }}</div>
-          <div class="stat-label">Total Products</div>
+          <!-- A dash while loading, so a real 0 is never confused with "not loaded yet" -->
+          <div class="stat-value" aria-live="polite">
+            @if (products.isLoading) {
+              <span class="text-muted">&ndash;</span>
+            } @else if (products.isFailed) {
+              <i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i>
+            } @else {
+              {{ totalProducts }}
+            }
+          </div>
+          <div class="stat-label">
+            @if (products.isFailed) { Could not load } @else { Total Products }
+          </div>
           <a routerLink="/products" class="stat-link" style="color:#6366f1;">
             Manage catalogue <i class="bi bi-arrow-right"></i>
           </a>
@@ -48,8 +73,18 @@
             </div>
             <span class="badge" style="background:#ecfdf5; color:#10b981;">Orders</span>
           </div>
-          <div class="stat-value">{{ totalOrders }}</div>
-          <div class="stat-label">Total Orders</div>
+          <div class="stat-value" aria-live="polite">
+            @if (orders.isLoading) {
+              <span class="text-muted">&ndash;</span>
+            } @else if (orders.isFailed) {
+              <i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i>
+            } @else {
+              {{ totalOrders }}
+            }
+          </div>
+          <div class="stat-label">
+            @if (orders.isFailed) { Could not load } @else { Total Orders }
+          </div>
           <a routerLink="/orders" class="stat-link" style="color:#10b981;">
             View all orders <i class="bi bi-arrow-right"></i>
           </a>
@@ -66,8 +101,18 @@
             </div>
             <span class="badge" style="background:#fef2f2; color:#ef4444;">Alerts</span>
           </div>
-          <div class="stat-value">{{ lowStockCount }}</div>
-          <div class="stat-label">Low Stock Alerts</div>
+          <div class="stat-value" aria-live="polite">
+            @if (lowStock.isLoading) {
+              <span class="text-muted">&ndash;</span>
+            } @else if (lowStock.isFailed) {
+              <i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i>
+            } @else {
+              {{ lowStockCount }}
+            }
+          </div>
+          <div class="stat-label">
+            @if (lowStock.isFailed) { Could not load } @else { Low Stock Alerts }
+          </div>
           <a routerLink="/inventory" class="stat-link" style="color:#ef4444;">
             Check inventory <i class="bi bi-arrow-right"></i>
           </a>
@@ -92,13 +137,20 @@
       </div>
 
       <!-- Loading -->
-      <div *ngIf="loading" class="text-center py-5">
-        <div class="spinner-border" style="color:#6366f1;"></div>
-        <p class="text-muted mt-2 small">Loading orders...</p>
-      </div>
+      @if (orders.isLoading) {
+        <app-skeleton-table [rows]="5" [cols]="6" message="Loading recent orders..."
+                            [headers]="['Order','Customer','Items','Total','Status','Date']" />
+      }
+
+      <!-- Could not load at all -->
+      @if (orders.isBlockingFailure) {
+        <app-error-state [error]="orders.error!" [busy]="orders.isRefreshing"
+                         (retry)="loadOrders()" />
+      }
 
       <!-- Table -->
-      <div class="table-responsive" *ngIf="!loading">
+      <div class="table-responsive" *ngIf="orders.isReady || orders.isPartialFailure"
+           [attr.aria-busy]="orders.isRefreshing">
         <table class="table mb-0">
           <thead>
             <tr>
@@ -134,10 +186,8 @@
             </tr>
             <tr *ngIf="recentOrders.length === 0">
               <td colspan="6">
-                <div class="empty-state">
-                  <div class="empty-icon"><i class="bi bi-receipt"></i></div>
-                  <p>No orders yet</p>
-                </div>
+                <app-empty-state icon="bi-receipt" title="No orders yet"
+                                 message="Orders placed by customers will appear here." />
               </td>
             </tr>
           </tbody>

@@ -12,12 +12,18 @@
   </div>
 
   <!-- Alerts -->
-  <div class="alert alert-success d-flex align-items-center gap-2" *ngIf="successMessage">
-    <i class="bi bi-check-circle-fill"></i><span>{{ successMessage }}</span>
-  </div>
-  <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="errorMessage && !showModal">
-    <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
-  </div>
+  <!-- Action outcomes are reported by toast. This covers a failed refresh. -->
+  @if (state.isPartialFailure) {
+    <div class="alert alert-warning d-flex align-items-center gap-2" role="status">
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      <span class="flex-grow-1">{{ state.error!.message }}</span>
+      @if (state.error!.retryable) {
+        <button type="button" class="btn btn-sm btn-outline-dark" (click)="loadProducts()">
+          Try again
+        </button>
+      }
+    </div>
+  }
 
   <!-- Filters -->
   <div class="card mb-4">
@@ -49,13 +55,20 @@
   </div>
 
   <!-- Loading -->
-  <div *ngIf="loading" class="text-center py-5">
-    <div class="spinner-border" style="color:#6366f1;"></div>
-    <p class="text-muted mt-2 small">Loading products...</p>
-  </div>
+  @if (state.isLoading) {
+    <app-skeleton-table [rows]="6" [cols]="5" message="Loading products..."
+                        [headers]="['Product','Category','Price','Created','Actions']" />
+  }
+
+  <!-- Could not load at all -->
+  @if (state.isBlockingFailure) {
+    <app-error-state [error]="state.error!" [busy]="state.isRefreshing"
+                     (retry)="loadProducts()" />
+  }
 
   <!-- Grid -->
-  <div class="row g-3" *ngIf="!loading">
+  <div class="row g-3" *ngIf="state.isReady || state.isPartialFailure"
+       [attr.aria-busy]="state.isRefreshing">
 
     <div class="col-sm-6 col-md-4 col-xl-3" *ngFor="let product of filteredProducts">
       <div class="card product-card h-100">
@@ -103,19 +116,19 @@
 </div>
 
 <!-- ── Modal ──────────────────────────────────────────────────── -->
-<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+<div class="modal-backdrop" *ngIf="showModal()" (click)="closeModal()"></div>
 
-<div class="modal d-block" *ngIf="showModal" tabindex="-1">
+<div class="modal d-block" *ngIf="showModal()" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content" (click)="$event.stopPropagation()">
 
       <div class="modal-header">
         <div>
           <h5 class="modal-title fw-bold mb-0">
-            {{ isEditing ? 'Edit Product' : 'Add New Product' }}
+            {{ isEditing() ? 'Edit Product' : 'Add New Product' }}
           </h5>
           <p class="text-muted small mb-0 mt-1">
-            {{ isEditing ? 'Update product details below' : 'Fill in the details for your new product' }}
+            {{ isEditing() ? 'Update product details below' : 'Fill in the details for your new product' }}
           </p>
         </div>
         <button class="btn-close" (click)="closeModal()"></button>
@@ -124,8 +137,8 @@
       <div class="modal-body">
 
         <div class="alert alert-danger d-flex align-items-center gap-2"
-             *ngIf="errorMessage && showModal">
-          <i class="bi bi-exclamation-circle-fill"></i><span>{{ errorMessage }}</span>
+             *ngIf="modalError() && showModal()">
+          <i class="bi bi-exclamation-circle-fill"></i><span>{{ modalError() }}</span>
         </div>
 
         <div class="row g-3">
@@ -134,8 +147,8 @@
           <div class="col-12">
             <label class="form-label fw-semibold">Product Image</label>
             <div class="image-upload-area" (click)="fileInput.click()">
-              <img *ngIf="imagePreview" [src]="imagePreview" class="preview-image">
-              <div *ngIf="!imagePreview" class="upload-placeholder">
+              <img *ngIf="imagePreview()" [src]="imagePreview()" class="preview-image">
+              <div *ngIf="!imagePreview()" class="upload-placeholder">
                 <i class="bi bi-cloud-upload fs-2 text-muted d-block mb-1"></i>
                 <span class="text-muted small">Click to upload image</span>
               </div>
@@ -179,9 +192,9 @@
 
       <div class="modal-footer">
         <button class="btn btn-outline-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-primary px-4" (click)="saveProduct()" [disabled]="saving">
-          <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
-          {{ saving ? 'Saving...' : (isEditing ? 'Update Product' : 'Add Product') }}
+        <button class="btn btn-primary px-4" (click)="saveProduct()" [disabled]="saving()">
+          <span *ngIf="saving()" class="spinner-border spinner-border-sm me-2"></span>
+          {{ saving() ? 'Saving...' : (isEditing() ? 'Update Product' : 'Add Product') }}
         </button>
       </div>
 
